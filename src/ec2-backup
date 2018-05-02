@@ -17,16 +17,16 @@ def parse_arguments():
 	                    "through the given filter command on the "   \
 	                    "localhost before copying the data to the "  \
 	                    "remote system.")
-	
+
 	parser.add_argument("-r", dest="remote_filter", help="Pass data " \
 	                    "through the given filter command on the remote " \
 	                    "host before writing the data to the volume.")
-	
+
 	parser.add_argument("-v", dest="volume_id", help="Use the given " \
 	                    "volume instead of creating a new one.")
-	
+
 	arguments = parser.parse_args()
-	
+
 	return arguments
 
 
