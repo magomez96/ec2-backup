@@ -18,7 +18,7 @@ def parse_arguments():
 	                    "localhost before copying the data to the "  \
 	                    "remote system.")
 
-	parser.add_argument("-r", dest="remote_filter", help="Pass data " \
+	parser.add_argument("-r", dest="remote_filter", help="Pass data "     \
 	                    "through the given filter command on the remote " \
 	                    "host before writing the data to the volume.")
 
