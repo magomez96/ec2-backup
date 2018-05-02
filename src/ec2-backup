@@ -1,11 +1,16 @@
 #! /usr/bin/env python3
 
 
-def main():
-	print("Hello World")
-	return
+"""
+TODO - module docstring
+"""
 
+
+def main():
+	""" Main run-time function. """
+	print("Hello World")
+
+	return
 
 if __name__ == "__main__":
 	main()
-
