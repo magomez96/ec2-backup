@@ -6,9 +6,35 @@ TODO - module docstring
 """
 
 
+import argparse
+
+
+def parse_arguments():
+	""" Parse command line arguments and return a Namespace object. """
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument("-l", dest="local_filter", help="Pass data " \
+	                    "through the given filter command on the "   \
+	                    "localhost before copying the data to the "  \
+	                    "remote system.")
+	
+	parser.add_argument("-r", dest="remote_filter", help="Pass data " \
+	                    "through the given filter command on the remote " \
+	                    "host before writing the data to the volume.")
+	
+	parser.add_argument("-v", dest="volume_id", help="Use the given " \
+	                    "volume instead of creating a new one.")
+	
+	arguments = parser.parse_args()
+	
+	return arguments
+
+
 def main():
 	""" Main run-time function. """
-	print("Hello World")
+	arguments = parse_arguments()
+
+	print(arguments)
 
 	return
 
