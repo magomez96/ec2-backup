@@ -8,8 +8,8 @@ TODO - module docstring
 
 import argparse
 import os
-import boto3
 import time
+import boto3
 
 
 def load_context():
@@ -28,24 +28,27 @@ def parse_arguments():
     """ Parse command line arguments and return a Namespace object. """
     parser = argparse.ArgumentParser(
         description="The ec2-backup tool performs a backup of the given "     \
-	"directory into Amazon Elastic Block Storage (EBS).  This is "        \
-	"achieved by creating a volume of the appropriate size, attaching "   \
-	"it to an EC2 instance and finally copying the files from the given " \
-	"directory onto this volume."
+        "directory into Amazon Elastic Block Storage (EBS).  This is "        \
+        "achieved by creating a volume of the appropriate size, attaching "   \
+        "it to an EC2 instance and finally copying the files from the given " \
+        "directory onto this volume."
     )
 
     parser.add_argument(metavar="dir", dest="directory")
 
-    parser.add_argument("-l", metavar="filter", dest="local_filter",
-        help="Pass data through the given filter command on the localhost " \
-	"before copying the data to the remote system.")
+    parser.add_argument(
+        "-l", metavar="filter", dest="local_filter", help="Pass data "      \
+        "through the given filter command on the localhost before copying " \
+        "the data to the remote system.")
 
-    parser.add_argument("-r", metavar="filter", dest="remote_filter",
-        help="Pass data through the given filter command on the remote host " \
-	"before writing the data to the volume.")
+    parser.add_argument(
+        "-r", metavar="filter", dest="remote_filter", help="Pass data " \
+        "through the given filter command on the remote host before writing " \
+        "the data to the volume.")
 
-    parser.add_argument("-v", metavar="volume-id", dest="volume_id",
-        help="Use the given volume instead of creating a new one.")
+    parser.add_argument(
+        "-v", metavar="volume-id", dest="volume_id", help="Use the given " \
+        "volume instead of creating a new one.")
 
     arguments = parser.parse_args()
 
