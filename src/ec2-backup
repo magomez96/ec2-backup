@@ -7,36 +7,142 @@ TODO - module docstring
 
 
 import argparse
+import os
+import time
+import boto3
+
+
+def load_context():
+    arguments = parse_arguments()
+
+    context = {
+        "arguments": arguments,
+        "environment": load_environment(),
+        "directory": directory_information(arguments.directory)
+    }
+
+    return context
 
 
 def parse_arguments():
-	""" Parse command line arguments and return a Namespace object. """
-	parser = argparse.ArgumentParser()
+    """ Parse command line arguments and return a Namespace object. """
+    parser = argparse.ArgumentParser(
+        description="The ec2-backup tool performs a backup of the given "     \
+        "directory into Amazon Elastic Block Storage (EBS).  This is "        \
+        "achieved by creating a volume of the appropriate size, attaching "   \
+        "it to an EC2 instance and finally copying the files from the given " \
+        "directory onto this volume."
+    )
 
-	parser.add_argument("-l", dest="local_filter", help="Pass data " \
-	                    "through the given filter command on the "   \
-	                    "localhost before copying the data to the "  \
-	                    "remote system.")
+    parser.add_argument(metavar="dir", dest="directory")
 
-	parser.add_argument("-r", dest="remote_filter", help="Pass data "     \
-	                    "through the given filter command on the remote " \
-	                    "host before writing the data to the volume.")
+    parser.add_argument(
+        "-l", metavar="filter", dest="local_filter", help="Pass data "      \
+        "through the given filter command on the localhost before copying " \
+        "the data to the remote system.")
 
-	parser.add_argument("-v", dest="volume_id", help="Use the given " \
-	                    "volume instead of creating a new one.")
+    parser.add_argument(
+        "-r", metavar="filter", dest="remote_filter", help="Pass data " \
+        "through the given filter command on the remote host before writing " \
+        "the data to the volume.")
 
-	arguments = parser.parse_args()
+    parser.add_argument(
+        "-v", metavar="volume-id", dest="volume_id", help="Use the given " \
+        "volume instead of creating a new one.")
 
-	return arguments
+    arguments = parser.parse_args()
+
+    return arguments
+
+
+def load_environment():
+    """ Parse environment variables and return a dictionary object. """
+    environment = {
+        "VERBOSE": os.getenv("EC2_BACKUP_VERBOSE", False),
+        "AWS_FLAGS": os.getenv("EC2_BACKUP_FLAGS_AWS", ""),
+        "SSH_FLAGS": os.getenv("EC2_BACKUP_FLAGS_SSH", "")
+    }
+
+    return environment
+
+
+def directory_information(target: str):
+    return
+
+
+class Volume:
+    @staticmethod
+    def create():
+        return
+
+
+    @staticmethod
+    def query(identifier: str):
+        return
+
+
+class Instance:
+    def __init__(self):
+        self.image_id = "ami-569ed93c"
+        self.instance_type = "t1.micro"
+        self.wait_delay = 5.000
+
+        self.identifier = None
+
+        return
+
+
+    def create(self):
+        ec2_connection = boto3.resource("ec2")
+
+        response = ec2_connection.create_instances(
+            ImageId=self.image_id,
+            InstanceType=self.instance_type,
+            #Region=None,
+            #Placement={
+            #    "AvailabilityZone": None
+            #},
+            MinCount=1,
+            MaxCount=1,
+            InstanceInitiatedShutdownBehavior="terminate"
+        )
+
+        instance = response[0]
+        self.identifier = instance.id
+
+        # Wait for the instance to enter a running state
+        while instance.state.get("Name") != "running":
+            time.sleep(self.wait_delay)
+            instance.reload()
+
+        return
+
+
+    def terminate(self):
+        if self.identifier is None:
+            return
+
+        ec2_connection = boto3.resource("ec2")
+
+        results = ec2_connection.instances.filter(
+            InstanceIds=[
+                self.identifier
+            ]
+        )
+
+        results.terminate()
+
+        return
 
 
 def main():
-	""" Main run-time function. """
-	arguments = parse_arguments()
+    """ Main run-time function. """
+    context = load_context()
 
-	print(arguments)
+    print(context)
 
-	return
+    return
+
 
 if __name__ == "__main__":
-	main()
+    main()

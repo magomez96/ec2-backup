@@ -1,3 +1,4 @@
 pylint
 git-pylint-commit-hook
 argparse
+boto3
