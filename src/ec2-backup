@@ -72,13 +72,9 @@ def directory_information(target: str):
 
 class Volume:
     @staticmethod
-    def create():
-        return
-
-
-    @staticmethod
     def query(identifier: str):
-        return
+        ec2_connection = boto3.resource("ec2")
+        return ec2_connection.volume(identifier)
 
 
 class Instance:
@@ -96,6 +92,17 @@ class Instance:
         ec2_connection = boto3.resource("ec2")
 
         response = ec2_connection.create_instances(
+            BlockDeviceMappings=[
+        {
+            'DeviceName': 'dev/sdb',
+            'Ebs': {
+                'Encrypted': False,
+                'DeleteOnTermination': False,
+                'VolumeSize': 1,  # Replace with real size here
+                'VolumeType': 'standard'
+            },
+        },
+    ],
             ImageId=self.image_id,
             InstanceType=self.instance_type,
             #Region=None,

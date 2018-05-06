@@ -1,0 +1,3 @@
+Package urls
+ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/7.0/All/python36-3.6.5.tgz
+ftp://ftp.netbsd.org/pub/pkgsrc/packages/NetBSD/i386/7.0/All/py36-pip-9.0.3.tgz
