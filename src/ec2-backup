@@ -94,7 +94,7 @@ class Instance:
         response = ec2_connection.create_instances(
             BlockDeviceMappings=[
         {
-            'DeviceName': 'dev/sdb',
+            'DeviceName': 'sdb',
             'Ebs': {
                 'Encrypted': False,
                 'DeleteOnTermination': False,
