@@ -22,7 +22,7 @@ def load_context():
     context = {
         "arguments": arguments,
         "environment": load_environment(),
-        "directory": directory_size(arguments.directory)
+        "directory": directory_information(arguments.directory)
     }
 
     return context
