@@ -8,6 +8,7 @@ TODO - module docstring
 
 import argparse
 import os
+import datetime
 import math
 import time
 import boto3
@@ -94,7 +95,7 @@ def directory_information(target: str):
 def verbose(message: str):
     """ Prints verbose trace messages to STDOUT. """
     if context["environment"]["VERBOSE"]:
-        print("ec2-backup: {}".format(message))
+        print("ec2-backup: [{}]: {}".format(datetime.datetime.now(), message))
 
     return
 
@@ -110,7 +111,7 @@ class Volume:
 class Instance:
     def __init__(self):
         """ Initialize instance default launche configuration. """
-        self.image_id = "ami-569ed93c"
+        self.image_id = "ami-0dc82b70"
         self.instance_type = "t1.micro"
         self.wait_delay = 5.000
 
@@ -128,6 +129,39 @@ class Instance:
         verbose("Opening connection with AWS API...")
         ec2_connection = boto3.resource("ec2")
 
+        verbose("Attempting to create AWS EC2 security group...")
+        try:
+            ec2_connection.create_security_group(
+                GroupName="ec2-backup",
+                Description="Allow SSH ingress traffic."
+            )
+        except:
+            verbose("Security group already exists.")
+
+        verbose("Opening raw-connection with boto3 API...")
+        client = boto3.client("ec2")
+
+        verbose("Attempting to configure security group ingress policy...")
+        try:
+            client.authorize_security_group_ingress(
+                GroupName="ec2-backup",
+                IpPermissions=[
+                    {
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "IpProtocol": "TCP",
+                        "IpRanges": [
+                            {
+                                "CidrIp": "0.0.0.0/0",
+                                "Description": "Allow all hosts."
+                            }
+                        ]
+                    }
+                ]
+            )
+        except:
+            verbose("Policy already exists.")
+
         verbose("Describing EC2 key pair...")
         keypairs = list(ec2_connection.key_pairs.all())
 
@@ -141,16 +175,16 @@ class Instance:
         response = ec2_connection.create_instances(
             KeyName=keypair.name,
             BlockDeviceMappings=[
-        {
-            'DeviceName': 'sdb',
-            'Ebs': {
-                'Encrypted': False,
-                'DeleteOnTermination': False,
-                'VolumeSize': 2 * context["directory"]["size"]["GB"],
-                'VolumeType': 'standard'
-            },
-        },
-    ],
+                {
+                    'DeviceName': 'sdb',
+                    'Ebs': {
+                        'Encrypted': False,
+                        'DeleteOnTermination': False,
+                        'VolumeSize': 2 * context["directory"]["size"]["GB"],
+                        'VolumeType': 'standard'
+                    }
+                }
+            ],
             ImageId=self.image_id,
             InstanceType=self.instance_type,
             #Region=None,
@@ -165,14 +199,38 @@ class Instance:
         instance = response[0]
         self.identifier = instance.id
 
-        # Wait for the instance to enter a running state
-        verbose("Waiting for EC2 instance to enter running state...")
-        while instance.state.get("Name") != "running":
+        # Provide time for the instance to be created
+        time.sleep(self.wait_delay)
+
+        # Wait for the instance to enter a healthy state
+
+        print(response)
+        verbose("Waiting for EC2 instance to enter running healthy...")
+        while not self.is_healthy():
             time.sleep(self.wait_delay)
-            verbose("Checking instance state...")
-            instance.reload()
 
         return
+
+
+    def is_healthy(self):
+        """ Queries the status of the current EC2 instance and checks if it's
+        healthy. """
+        verbose("Openning raw-connection to boto3 API...")
+        client = boto3.client("ec2")
+
+        verbose("Querying instance status...")
+        response = client.describe_instance_status(
+            InstanceIds=[
+                self.identifier
+            ]
+        )
+
+        # Not my proudest line of code, but AWS' response schema was
+        # unpredictable :(
+        if "'ok'" in str(response):
+            return True
+
+        return False
 
 
     def terminate(self):
