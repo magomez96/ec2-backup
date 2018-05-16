@@ -62,7 +62,7 @@ def parse_arguments():
 def load_environment():
     """ Parse environment variables and return a dictionary object. """
     environment = {
-        "VERBOSE": os.getenv("EC2_BACKUP_VERBOSE", False),
+        "VERBOSE": os.getenv("EC2_BACKUP_VERBOSE", True),
         "AWS_FLAGS": os.getenv("EC2_BACKUP_FLAGS_AWS", ""),
         "SSH_FLAGS": os.getenv("EC2_BACKUP_FLAGS_SSH", "")
     }
@@ -94,7 +94,7 @@ def directory_information(target: str):
 def verbose(message: str):
     """ Prints verbose trace messages to STDOUT. """
     if context["environment"]["VERBOSE"]:
-        print("ec2-backup: ".format(message))
+        print("ec2-backup: {}".format(message))
 
     return
 
@@ -128,8 +128,18 @@ class Instance:
         verbose("Opening connection with AWS API...")
         ec2_connection = boto3.resource("ec2")
 
+        verbose("Describing EC2 key pair...")
+        keypairs = list(ec2_connection.key_pairs.all())
+
+        if len(keypairs) <= 0:
+            raise Error("No key-pairs present on AWS EC2 console.")
+
+        keypair = keypairs.pop()
+        verbose("Selected key-pair: {}".format(keypair))
+
         verbose("Creating EC2 instance with EBS...")
         response = ec2_connection.create_instances(
+            KeyName=keypair.name,
             BlockDeviceMappings=[
         {
             'DeviceName': 'sdb',
@@ -192,6 +202,10 @@ def main():
     context = load_context()
 
     verbose("Evaluated runtime context: {}".format(context))
+
+    instance = Instance()
+
+    instance.create()
 
     return
 
