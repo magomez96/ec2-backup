@@ -119,7 +119,7 @@ class Instance:
             'Ebs': {
                 'Encrypted': False,
                 'DeleteOnTermination': False,
-                'VolumeSize': 2 * context["directory"]["size"]["GB"]
+                'VolumeSize': 2 * context["directory"]["size"]["GB"],
                 'VolumeType': 'standard'
             },
         },
