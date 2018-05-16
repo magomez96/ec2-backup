@@ -147,6 +147,7 @@ class Instance:
 
 def main():
     """ Main run-time function. """
+    global context
     context = load_context()
 
     print(context)
