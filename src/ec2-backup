@@ -91,27 +91,44 @@ def directory_information(target: str):
     return information
 
 
+def verbose(message: str):
+    """ Prints verbose trace messages to STDOUT. """
+    if context["environment"]["VERBOSE"]:
+        print("ec2-backup: ".format(message))
+
+    return
+
+
 class Volume:
     @staticmethod
     def query(identifier: str):
+        print("".format())
         ec2_connection = boto3.resource("ec2")
         return ec2_connection.volume(identifier)
 
 
 class Instance:
     def __init__(self):
+        """ Initialize instance default launche configuration. """
         self.image_id = "ami-569ed93c"
         self.instance_type = "t1.micro"
         self.wait_delay = 5.000
 
         self.identifier = None
+	
+        verbose("Initialized instance launch configuration:")
+        verbose("AMI = {}".format(self.image_id))
+        verbose("TYPE = {}".format(self.instance_type))
 
         return
 
 
     def create(self):
+        """ Create an AWS EC2 instance with an attached EBS volume. """
+        verbose("Opening connection with AWS API...")
         ec2_connection = boto3.resource("ec2")
 
+        verbose("Creating EC2 instance with EBS...")
         response = ec2_connection.create_instances(
             BlockDeviceMappings=[
         {
@@ -139,25 +156,31 @@ class Instance:
         self.identifier = instance.id
 
         # Wait for the instance to enter a running state
+        verbose("Waiting for EC2 instance to enter running state...")
         while instance.state.get("Name") != "running":
             time.sleep(self.wait_delay)
+            verbose("Checking instance state...")
             instance.reload()
 
         return
 
 
     def terminate(self):
+        """ Terminate the provided AWS EC2 instance. """
         if self.identifier is None:
             return
 
+        verbose("Opening a connection to the AWS API...")
         ec2_connection = boto3.resource("ec2")
 
+        verbose("Filtering instance by identifier...")
         results = ec2_connection.instances.filter(
             InstanceIds=[
                 self.identifier
             ]
         )
 
+        verbose("Terminating instance...")
         results.terminate()
 
         return
@@ -168,7 +191,7 @@ def main():
     global context
     context = load_context()
 
-    print(context)
+    verbose("Evaluated runtime context: {}".format(context))
 
     return
 
