@@ -12,6 +12,9 @@ import time
 import boto3
 
 
+context = {}
+
+
 def load_context():
     arguments = parse_arguments()
 
@@ -66,7 +69,7 @@ def load_environment():
     return environment
 
 
-def directory_information(target: str):
+def directory_size(target: str):
     return
 
 
