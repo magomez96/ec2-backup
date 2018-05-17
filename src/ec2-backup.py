@@ -187,10 +187,6 @@ class Instance:
             ],
             ImageId=self.image_id,
             InstanceType=self.instance_type,
-            # Region=None,
-            # Placement={
-            #    "AvailabilityZone": None
-            #},
             MinCount=1,
             MaxCount=1,
             SecurityGroups=[
@@ -213,7 +209,7 @@ class Instance:
 
         thisInst = ec2_connection.Instance(instance.id)
 
-        return thisInst.public_dns_name
+        return [thisInst.public_dns_name, thisInst.block_device_mappings[0]['Ebs']['VolumeId']]
 
     def is_healthy(self):
         """ Queries the status of the current EC2 instance and checks if it's
@@ -266,16 +262,18 @@ def main():
     i = Instance()
     result = i.create()
 
-    tar = subprocess.Popen(['tar', 'cf', '-', context['directory']['path']],
+    tar = subprocess.Popen(['tar', '-C', '/', '-c', '-f', '-', context['directory']['path'][1:]],
                            stdout=subprocess.PIPE,)
-    ssh = subprocess.Popen(['ssh',
-                            'admin@' + result, 'sudo dd of=/dev/xvdb'],
+    ssh = subprocess.Popen(['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'LogLevel=quiet',
+                            'admin@' + result[0], 'sudo dd of=/dev/xvdb status=none'],
                            stdin=tar.stdout,
                            stdout=subprocess.PIPE,
                            )
     ssh.wait()
+    i.terminate()
+    print(result[1])
 
-    return
+    return 0
 
 
 if __name__ == "__main__":
