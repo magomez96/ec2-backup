@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/pkg/bin/python3.6
 
 
 """
@@ -12,6 +12,7 @@ import datetime
 import math
 import time
 import boto3
+import subprocess
 
 
 context = {}
@@ -32,27 +33,27 @@ def load_context():
 def parse_arguments():
     """ Parse command line arguments and return a Namespace object. """
     parser = argparse.ArgumentParser(
-        description="The ec2-backup tool performs a backup of the given "     \
-        "directory into Amazon Elastic Block Storage (EBS).  This is "        \
-        "achieved by creating a volume of the appropriate size, attaching "   \
-        "it to an EC2 instance and finally copying the files from the given " \
+        description="The ec2-backup tool performs a backup of the given "
+        "directory into Amazon Elastic Block Storage (EBS).  This is "
+        "achieved by creating a volume of the appropriate size, attaching "
+        "it to an EC2 instance and finally copying the files from the given "
         "directory onto this volume."
     )
 
     parser.add_argument(metavar="dir", dest="directory")
 
     parser.add_argument(
-        "-l", metavar="filter", dest="local_filter", help="Pass data "      \
-        "through the given filter command on the localhost before copying " \
+        "-l", metavar="filter", dest="local_filter", help="Pass data "
+        "through the given filter command on the localhost before copying "
         "the data to the remote system.")
 
     parser.add_argument(
-        "-r", metavar="filter", dest="remote_filter", help="Pass data " \
-        "through the given filter command on the remote host before writing " \
+        "-r", metavar="filter", dest="remote_filter", help="Pass data "
+        "through the given filter command on the remote host before writing "
         "the data to the volume.")
 
     parser.add_argument(
-        "-v", metavar="volume-id", dest="volume_id", help="Use the given " \
+        "-v", metavar="volume-id", dest="volume_id", help="Use the given "
         "volume instead of creating a new one.")
 
     arguments = parser.parse_args()
@@ -75,7 +76,7 @@ def directory_information(target: str):
     """ Returns the size of a target to the nearst gigabyte. """
     information = {
         "path": os.path.abspath(target),
-	"size": {
+        "size": {
             "GB": 0,
             "B": 0
         }
@@ -110,19 +111,18 @@ class Volume:
 
 class Instance:
     def __init__(self):
-        """ Initialize instance default launche configuration. """
+        """ Initialize instance default launch configuration. """
         self.image_id = "ami-0dc82b70"
         self.instance_type = "t1.micro"
         self.wait_delay = 5.000
 
         self.identifier = None
-	
+
         verbose("Initialized instance launch configuration:")
         verbose("AMI = {}".format(self.image_id))
         verbose("TYPE = {}".format(self.instance_type))
 
         return
-
 
     def create(self):
         """ Create an AWS EC2 instance with an attached EBS volume. """
@@ -179,20 +179,23 @@ class Instance:
                     'DeviceName': 'sdb',
                     'Ebs': {
                         'Encrypted': False,
-                        'DeleteOnTermination': False,
+                        'DeleteOnTermination': True,  # Remember to change this back to false
                         'VolumeSize': 2 * context["directory"]["size"]["GB"],
                         'VolumeType': 'standard'
-                    }
-                }
+                    },
+                },
             ],
             ImageId=self.image_id,
             InstanceType=self.instance_type,
-            #Region=None,
-            #Placement={
+            # Region=None,
+            # Placement={
             #    "AvailabilityZone": None
             #},
             MinCount=1,
             MaxCount=1,
+            SecurityGroups=[
+                'ec2-backup'
+            ],
             InstanceInitiatedShutdownBehavior="terminate"
         )
 
@@ -204,13 +207,13 @@ class Instance:
 
         # Wait for the instance to enter a healthy state
 
-        print(response)
         verbose("Waiting for EC2 instance to enter running healthy...")
         while not self.is_healthy():
             time.sleep(self.wait_delay)
 
-        return
+        thisInst = ec2_connection.Instance(instance.id)
 
+        return thisInst.public_dns_name
 
     def is_healthy(self):
         """ Queries the status of the current EC2 instance and checks if it's
@@ -231,7 +234,6 @@ class Instance:
             return True
 
         return False
-
 
     def terminate(self):
         """ Terminate the provided AWS EC2 instance. """
@@ -261,9 +263,17 @@ def main():
 
     verbose("Evaluated runtime context: {}".format(context))
 
-    instance = Instance()
+    i = Instance()
+    result = i.create()
 
-    instance.create()
+    tar = subprocess.Popen(['tar', 'cf', '-', context['directory']['path']],
+                           stdout=subprocess.PIPE,)
+    ssh = subprocess.Popen(['ssh',
+                            'admin@' + result, 'sudo dd of=/dev/xvdb'],
+                           stdin=tar.stdout,
+                           stdout=subprocess.PIPE,
+                           )
+    ssh.wait()
 
     return
 
